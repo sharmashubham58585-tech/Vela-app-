@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -9,8 +10,8 @@ export default function AIPage() {
   const [remaining, setRemaining] = useState(3);
   const [loading, setLoading] = useState(false);
 
-  const handleAsk = () => {
-    if (!question.trim() || remaining <= 0) return;
+  const handleAsk = async () => {
+    if (!question.trim() || remaining <= 0 || loading) return;
 
     const userQ = question.trim();
     setMessages((prev) => [...prev, { role: "user", content: userQ }]);
@@ -18,17 +19,40 @@ export default function AIPage() {
     setRemaining((r) => r - 1);
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userQ }),
+      });
+
+      const data = await res.json();
+
+      if (data.reply) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: data.reply },
+        ]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Maaf kijiye, abhi jawab nahi de paaya. Thodi der baad try karein.",
+          },
+        ]);
+      }
+    } catch (err) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            "This is a demo response. In the full version, the AI will read your actual birth chart and give a calm, chart-based answer. You have used one free question.",
+          content: "Kuch technical problem aa gayi. Please thodi der baad try karein.",
         },
       ]);
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -47,17 +71,17 @@ export default function AIPage() {
       </header>
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-6 py-8 flex flex-col">
-        <h1 className="font-serif text-2xl mb-1">AI Astrologer</h1>
+        <h1 className="font-serif text-2xl mb-1">AI ज्योतिष</h1>
         <p className="text-black/60 text-sm mb-6">
-          Ask anything about your chart. 3 free questions included.
+          Apne sawaal poochho. 3 free questions included.
         </p>
 
         <div className="flex-1 space-y-4 mb-6 min-h-[250px]">
           {messages.length === 0 && (
             <div className="text-center text-black/40 py-12 text-sm">
-              Your conversation will appear here.
+              Aapka sawaal yahan dikhega.
               <br />
-              Example: “What does my current dasha suggest?”
+              Example: “Meri current dasha kya keh rahi hai?”
             </div>
           )}
           {messages.map((m, i) => (
@@ -73,16 +97,16 @@ export default function AIPage() {
             </div>
           ))}
           {loading && (
-            <div className="text-black/40 text-sm italic">Observing the chart…</div>
+            <div className="text-black/40 text-sm italic">Socho toh raha hoon…</div>
           )}
         </div>
 
         <div className="border-t border-black/5 pt-4">
           {remaining <= 0 ? (
             <div className="text-center p-4 rounded-xl bg-[#e0d9c8]/50 text-sm">
-              <p className="mb-2">You have used all 3 free questions.</p>
+              <p className="mb-2">Aapne 3 free questions use kar liye hain.</p>
               <button className="px-5 py-2 rounded-full bg-[#101412] text-[#ebe6d8] text-sm">
-                Upgrade for unlimited access
+                Upgrade for unlimited
               </button>
             </div>
           ) : (
@@ -92,7 +116,7 @@ export default function AIPage() {
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAsk()}
-                placeholder="Ask about your chart…"
+                placeholder="Apna sawaal likhein…"
                 className="flex-1 px-4 py-3 rounded-xl bg-[#e0d9c8]/50 border border-black/10 focus:outline-none focus:border-[#d4b483] text-sm"
               />
               <button
@@ -100,7 +124,7 @@ export default function AIPage() {
                 disabled={loading || !question.trim()}
                 className="px-5 py-3 rounded-xl bg-[#101412] text-[#ebe6d8] text-sm font-medium disabled:opacity-40"
               >
-                Ask
+                Poochho
               </button>
             </div>
           )}
@@ -108,4 +132,4 @@ export default function AIPage() {
       </div>
     </main>
   );
-                }
+}
